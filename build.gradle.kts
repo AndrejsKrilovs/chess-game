@@ -18,22 +18,11 @@ tasks.register<Exec>("npmBuild") {
 
 tasks.register<Copy>("copyFrontend") {
   dependsOn("npmBuild")
-  from("$frontendDir/dist")
-  into("backend/src/main/resources/static")
-}
-
-project(":backend") {
-  plugins.withId("org.springframework.boot") {
-    tasks.named("processResources") {
-      dependsOn(":copyFrontend")
-    }
-  }
-}
-
-tasks.named("clean") {
-  doLast {
+  doFirst {
     delete("backend/src/main/resources/static")
   }
+  from("$frontendDir/dist")
+  into("backend/src/main/resources/static")
 }
 
 project(":backend") {
