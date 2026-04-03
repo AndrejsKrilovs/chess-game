@@ -6,7 +6,7 @@ data class Coordinates(
 ) {
 
   init {
-    require(this.file.lowercaseChar() in 'a'..'h') {
+    require(file in 'a'..'h') {
       "File must be between A and H"
     }
     require(rank in 1..8) {

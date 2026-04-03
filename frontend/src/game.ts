@@ -18,9 +18,11 @@ export class Game {
         this.ws = new WebSocket("ws://localhost:8080/ws");
         this.ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            console.log(data)
             if (data.type === "INIT") {
                 this.render(data.pieces);
+            }
+						if (data.type === "MOVES") {
+              console.log(data.moves);
             }
         };
     }
@@ -56,6 +58,9 @@ export class Game {
     }
 
 		private onCellClick(coord: string) {
-				console.log(coord);
+				this.ws.send(JSON.stringify({
+          type: "GET_MOVES",
+          from: coord
+        }));
     }
 }

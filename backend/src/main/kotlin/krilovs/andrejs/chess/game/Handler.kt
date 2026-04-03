@@ -22,4 +22,23 @@ class Handler: TextWebSocketHandler() {
 
     session.sendMessage(TextMessage(payload))
   }
+
+  override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
+    val data = mapper.readTree(message.payload)
+
+    if (data["type"].asText() == "GET_MOVES") {
+      val from = data["from"].asText()
+      val coord = Coordinates(from[0], from[1].digitToInt())
+      val moves = board.pieces[coord]?.getAvailableMoveSquares(board)?.map { "${it.file}${it.rank}" }
+
+      val payload = mapper.writeValueAsString(
+        mapOf(
+          "type" to "MOVES",
+          "moves" to moves
+        )
+      )
+
+      session.sendMessage(TextMessage(payload))
+    }
+  }
 }

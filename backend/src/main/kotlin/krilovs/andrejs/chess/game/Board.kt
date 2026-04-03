@@ -10,47 +10,37 @@ import krilovs.andrejs.chess.piece.Rook
 
 class Board {
   val pieces: MutableMap<Coordinates, Piece> = mutableMapOf()
-  fun getPiece(coord: Coordinates): Piece? = pieces[coord]
   fun setupDefaultPiecePositions() {
-    for (file in 'a'..'h') {
-      placePawns(Pawn(Color.WHITE, Coordinates(file, 2)))
-      placePawns(Pawn(Color.BLACK, Coordinates(file, 7)))
+    ('a'..'h').forEach {
+      placeLine(::Pawn, Color.WHITE, 2, it)
+      placeLine(::Pawn, Color.BLACK, 7, it)
     }
 
-    placeLine(Rook::class, Color.WHITE, 1, 'a', 'h')
-    placeLine(Rook::class, Color.BLACK, 8, 'a', 'h')
+    placeLine(::Rook, Color.WHITE, 1, 'a', 'h')
+    placeLine(::Rook, Color.BLACK, 8, 'a', 'h')
 
-    placeLine(Knight::class, Color.WHITE, 1, 'b', 'g')
-    placeLine(Knight::class, Color.BLACK, 8, 'b', 'g')
+    placeLine(::Knight, Color.WHITE, 1, 'b', 'g')
+    placeLine(::Knight, Color.BLACK, 8, 'b', 'g')
 
-    placeLine(Bishop::class, Color.WHITE, 1, 'c', 'f')
-    placeLine(Bishop::class, Color.BLACK, 8, 'c', 'f')
+    placeLine(::Bishop, Color.WHITE, 1, 'c', 'f')
+    placeLine(::Bishop, Color.BLACK, 8, 'c', 'f')
 
-    placePawns(Queen(Color.WHITE, Coordinates('d', 1)))
-    placePawns(Queen(Color.BLACK, Coordinates('d', 8)))
+    placeLine(::Queen, Color.WHITE, 1, 'd')
+    placeLine(::Queen, Color.BLACK, 8, 'd')
 
-    placePawns(King(Color.WHITE, Coordinates('e', 1)))
-    placePawns(King(Color.BLACK, Coordinates('e', 8)))
-  }
-
-  private fun placePawns(piece: Piece) {
-    pieces[piece.coordinates] = piece
+    placeLine(::King, Color.WHITE, 1, 'e')
+    placeLine(::King, Color.BLACK, 8, 'e')
   }
 
   private fun placeLine(
-    clazz: kotlin.reflect.KClass<out Piece>,
+    factory: (Color, Coordinates) -> Piece,
     color: Color,
     rank: Int,
     vararg files: Char
   ) {
-    for (file in files) {
-      val piece = when (clazz) {
-        Rook::class -> Rook(color, Coordinates(file, rank))
-        Knight::class -> Knight(color, Coordinates(file, rank))
-        Bishop::class -> Bishop(color, Coordinates(file, rank))
-        else -> error("Unsupported piece")
-      }
-      placePawns(piece)
+    files.forEach { file ->
+      val piece = factory(color, Coordinates(file, rank))
+      pieces[piece.coordinates] = piece
     }
   }
 }
