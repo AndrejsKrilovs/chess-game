@@ -9,6 +9,7 @@ import krilovs.andrejs.chess.piece.Queen
 import krilovs.andrejs.chess.piece.Rook
 
 class Board {
+  var currentTurn: Color = Color.WHITE
   private val pieces: MutableMap<Coordinates, Piece> = mutableMapOf()
 
   fun getPieces(): Collection<Piece> = pieces.values
@@ -46,9 +47,13 @@ class Board {
 
   fun tryMove(from: Coordinates, to: Coordinates): Set<Coordinates>? {
     val piece = getPiece(from) ?: return null
+    if (piece.color != currentTurn) return emptySet()
+
     val moves = piece.getAvailableMoveSquares(this)
     if (to !in moves) return moves
     move(from, to)
+
+    currentTurn = if (currentTurn == Color.WHITE) Color.BLACK else Color.WHITE
     return emptySet()
   }
 

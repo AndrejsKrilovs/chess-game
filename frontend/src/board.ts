@@ -17,6 +17,17 @@ export class BoardView {
         container.appendChild(this.element);
     }
 
+		highlightMoves(moves: string[]) {
+        moves.forEach(pos => {
+            const cell = this.element.querySelector(`[data-pos="${pos}"]`);
+            cell?.classList.add("highlight");
+        });
+    }
+
+		clearHighlights() {
+        this.element.querySelectorAll(".cell").forEach(c => c.classList.remove("highlight"));
+    }
+
     private createBoard(): HTMLElement {
         const board = document.createElement("div");
         board.className = "board";

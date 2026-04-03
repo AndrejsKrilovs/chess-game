@@ -13,7 +13,7 @@ class Handler: TextWebSocketHandler() {
 
   override fun afterConnectionEstablished(session: WebSocketSession) {
     sessions += session
-    session.sendJson("INIT", mapOf("pieces" to board.getPieces()))
+    session.sendJson("INIT", mapOf("pieces" to board.getPieces(), "turn" to board.currentTurn))
   }
 
   override fun afterConnectionClosed(session: WebSocketSession, status: org.springframework.web.socket.CloseStatus) {
@@ -49,13 +49,11 @@ class Handler: TextWebSocketHandler() {
     if (result.isNotEmpty()) {
       return session.sendJson(
         "INVALID_MOVE",
-        mapOf(
-          "availableMoves" to result.map { "${it.file}${it.rank}" }
-        )
+        mapOf("availableMoves" to result.map { "${it.file}${it.rank}" })
       )
     }
 
-    broadcast("STATE", mapOf("pieces" to board.getPieces()))
+    broadcast("STATE", mapOf("pieces" to board.getPieces(), "turn" to board.currentTurn.name))
   }
 
   private fun WebSocketSession.sendJson(type: String, payload: Map<String, Any?>) {

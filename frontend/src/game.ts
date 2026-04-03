@@ -5,6 +5,8 @@ export class Game {
     private board!: BoardView;
     private pieces: any[] = [];
     private selected: string | null = null;
+    private currentTurn: string = "WHITE";
+    private availableMoves: string[] = [];
 
     constructor() {
         this.initUI();
@@ -24,10 +26,12 @@ export class Game {
             switch (data.type) {
                 case "INIT":
                 case "STATE":
+										this.currentTurn = data.turn;
                     this.render(data.pieces);
                     break;
                 case "MOVES":
-                    console.log(data.moves);
+                    this.availableMoves = data.moves;
+                    this.board.highlightMoves(this.availableMoves);
                     break;
                 case "INVALID_MOVE":
                     this.selected = null;
@@ -44,6 +48,8 @@ export class Game {
     private render(pieces: any[]) {
         this.pieces = pieces;
         this.board.clear();
+        this.board.clearHighlights();
+
         pieces.forEach(p => {
             const pos = `${p.coordinates.file}${p.coordinates.rank}`;
             this.board.setPiece(pos, this.getSymbol(p.type, p.color));
@@ -57,12 +63,18 @@ export class Game {
     }
 
     private onCellClick(coord: string) {
+				const piece = this.getPiece(coord);
         if (!this.selected && !this.hasPiece(coord)) {
             this.showError("Клетка пустая");
             return;
         }
+				if (!this.selected && piece.color !== this.currentTurn) {
+          this.showError(`Сейчас ходят ${this.getTurnLabel(this.currentTurn)}`);
+          return;
+        }
         if (!this.selected) {
             this.selected = coord;
+            this.board.clearHighlights();
             this.ws.send(JSON.stringify({
                 type: "GET_MOVES",
                 from: coord
@@ -76,10 +88,18 @@ export class Game {
             to: coord
         }));
         this.selected = null;
+        this.availableMoves = [];
+        this.board.clearHighlights();
     }
 
     private showError(message: string) {
         alert(message);
+    }
+
+		private getPiece(coord: string): any | undefined {
+        return this.pieces.find(
+            p => `${p.coordinates.file}${p.coordinates.rank}` === coord
+        );
     }
 
     private getSymbol(type: string, color: string): string {
@@ -93,5 +113,9 @@ export class Game {
         };
 
         return map[type]?.[color] || "?";
+    }
+
+		private getTurnLabel(color: string): string {
+        return { WHITE: "белые", BLACK: "чёрные" }[color] || color;
     }
 }
