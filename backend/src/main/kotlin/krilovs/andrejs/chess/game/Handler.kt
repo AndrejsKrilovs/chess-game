@@ -15,7 +15,8 @@ class Handler: TextWebSocketHandler() {
     val payload = mapper.writeValueAsString(
       mapOf(
         "type" to "INIT",
-        "pieces" to board.pieces.values
+        "pieces" to board.pieces.values,
+        "availableMoves" to board.pieces[Coordinates('b', 8)]?.getAvailableMoveSquares(board)
       )
     )
 

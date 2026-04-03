@@ -10,37 +10,47 @@ import krilovs.andrejs.chess.piece.Rook
 
 class Board {
   val pieces: MutableMap<Coordinates, Piece> = mutableMapOf()
-
-  private fun setPiece(piece: Piece, coordinates: Coordinates) {
-    piece.coordinates = coordinates
-    pieces[coordinates] = piece
-  }
-
+  fun getPiece(coord: Coordinates): Piece? = pieces[coord]
   fun setupDefaultPiecePositions() {
     for (file in 'a'..'h') {
-      setPiece(Pawn(Color.WHITE, Coordinates(file, 2)), Coordinates(file, 2))
-      setPiece(Pawn(Color.BLACK, Coordinates(file, 7)), Coordinates(file, 7))
+      placePawns(Pawn(Color.WHITE, Coordinates(file, 2)))
+      placePawns(Pawn(Color.BLACK, Coordinates(file, 7)))
     }
 
-    setPiece(Rook(Color.WHITE, Coordinates('a', 1)), Coordinates('a', 1))
-    setPiece(Rook(Color.WHITE, Coordinates('h', 1)), Coordinates('h', 1))
-    setPiece(Rook(Color.BLACK, Coordinates('a', 8)), Coordinates('a', 8))
-    setPiece(Rook(Color.BLACK, Coordinates('h', 8)), Coordinates('h', 8))
+    placeLine(Rook::class, Color.WHITE, 1, 'a', 'h')
+    placeLine(Rook::class, Color.BLACK, 8, 'a', 'h')
 
-    setPiece(Knight(Color.WHITE, Coordinates('b', 1)), Coordinates('b', 1))
-    setPiece(Knight(Color.WHITE, Coordinates('g', 1)), Coordinates('g', 1))
-    setPiece(Knight(Color.BLACK, Coordinates('b', 8)), Coordinates('b', 8))
-    setPiece(Knight(Color.BLACK, Coordinates('g', 8)), Coordinates('g', 8))
+    placeLine(Knight::class, Color.WHITE, 1, 'b', 'g')
+    placeLine(Knight::class, Color.BLACK, 8, 'b', 'g')
 
-    setPiece(Bishop(Color.WHITE, Coordinates('c', 1)), Coordinates('c', 1))
-    setPiece(Bishop(Color.WHITE, Coordinates('f', 1)), Coordinates('f', 1))
-    setPiece(Bishop(Color.BLACK, Coordinates('c', 8)), Coordinates('c', 8))
-    setPiece(Bishop(Color.BLACK, Coordinates('f', 8)), Coordinates('f', 8))
+    placeLine(Bishop::class, Color.WHITE, 1, 'c', 'f')
+    placeLine(Bishop::class, Color.BLACK, 8, 'c', 'f')
 
-    setPiece(Queen(Color.WHITE, Coordinates('d', 1)), Coordinates('d', 1))
-    setPiece(Queen(Color.BLACK, Coordinates('d', 8)), Coordinates('d', 8))
+    placePawns(Queen(Color.WHITE, Coordinates('d', 1)))
+    placePawns(Queen(Color.BLACK, Coordinates('d', 8)))
 
-    setPiece(King(Color.WHITE, Coordinates('e', 1)), Coordinates('e', 1))
-    setPiece(King(Color.BLACK, Coordinates('e', 8)), Coordinates('e', 8))
+    placePawns(King(Color.WHITE, Coordinates('e', 1)))
+    placePawns(King(Color.BLACK, Coordinates('e', 8)))
+  }
+
+  private fun placePawns(piece: Piece) {
+    pieces[piece.coordinates] = piece
+  }
+
+  private fun placeLine(
+    clazz: kotlin.reflect.KClass<out Piece>,
+    color: Color,
+    rank: Int,
+    vararg files: Char
+  ) {
+    for (file in files) {
+      val piece = when (clazz) {
+        Rook::class -> Rook(color, Coordinates(file, rank))
+        Knight::class -> Knight(color, Coordinates(file, rank))
+        Bishop::class -> Bishop(color, Coordinates(file, rank))
+        else -> error("Unsupported piece")
+      }
+      placePawns(piece)
+    }
   }
 }

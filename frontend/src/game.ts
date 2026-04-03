@@ -18,6 +18,7 @@ export class Game {
         this.ws = new WebSocket("ws://localhost:8080/ws");
         this.ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            console.log(data)
             if (data.type === "INIT") {
                 this.render(data.pieces);
             }
