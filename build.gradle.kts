@@ -8,21 +8,26 @@ val npmCommand = if (System.getProperty("os.name").contains("Windows")) "npm.cmd
 tasks.register<Exec>("npmInstall") {
   workingDir = frontendDir
   commandLine(npmCommand, "install")
+  inputs.file("$frontendDir/package.json")
+  outputs.dir("$frontendDir/node_modules")
 }
 
 tasks.register<Exec>("npmBuild") {
   workingDir = frontendDir
   commandLine(npmCommand, "run", "build")
   dependsOn("npmInstall")
+  inputs.dir("$frontendDir/src")
+  inputs.file("$frontendDir/package.json")
+  outputs.dir("$frontendDir/dist")
 }
 
 tasks.register<Copy>("copyFrontend") {
   dependsOn("npmBuild")
+  from("$frontendDir/dist")
+  into("backend/src/main/resources/static")
   doFirst {
     delete("backend/src/main/resources/static")
   }
-  from("$frontendDir/dist")
-  into("backend/src/main/resources/static")
 }
 
 project(":backend") {
@@ -35,6 +40,6 @@ project(":backend") {
 
 tasks.named("clean") {
   doLast {
-    delete("backend/src/main/resources/static")
+    delete(layout.projectDirectory.dir("backend/src/main/resources/static"))
   }
 }
