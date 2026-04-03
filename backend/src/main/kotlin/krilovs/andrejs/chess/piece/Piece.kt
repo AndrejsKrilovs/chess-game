@@ -11,7 +11,7 @@ abstract class Piece(
 ) {
   val type get() = this::class.simpleName ?: "UNKNOWN"
 
-  fun getAvailableMoveSquares(board: Board): Set<Coordinates> =
+  open fun getAvailableMoveSquares(board: Board): Set<Coordinates> =
     getPieceMoves()
       .mapNotNull { coordinates.shift(it) }
       .filter { isSquareAvailable(it, board) }
