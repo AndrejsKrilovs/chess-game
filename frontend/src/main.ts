@@ -17,10 +17,16 @@ const createBoard = () => {
             const coord = `${files[col]}${8 - row}`;
             cell.dataset.pos = coord;
             if (row === 7) {
-                cell.innerHTML += `<span class="coord bottom">${files[col]}</span>`;
+                const label = document.createElement("span");
+                label.className = "coord bottom";
+                label.textContent = files[col];
+                cell.appendChild(label);
             }
             if (col === 0) {
-                cell.innerHTML += `<span class="coord left">${8 - row}</span>`;
+                const label = document.createElement("span");
+                label.className = "coord left";
+                label.textContent = String(8 - row);
+                cell.appendChild(label);
             }
 
             cell.onclick = () => console.log(coord);
@@ -32,3 +38,36 @@ const createBoard = () => {
 };
 
 app.appendChild(createBoard());
+const ws = new WebSocket("ws://localhost:8080/ws");
+
+ws.onmessage = (event) => {
+    const { type, pieces } = JSON.parse(event.data);
+    if (type !== "INIT") return;
+
+    document.querySelectorAll(".cell").forEach(c => {
+        if (!c.querySelector(".coord")) {
+            c.textContent = "";
+        }
+    });
+
+    pieces.forEach((p: any) => {
+        const pos = `${p.coordinates.file}${p.coordinates.rank}`;
+        const cell = document.querySelector(`[data-pos="${pos}"]`);
+        if (!cell) return;
+
+        cell.appendChild(document.createTextNode(getSymbol(p.type, p.color)));
+    });
+};
+
+const SYMBOLS: any = {
+    Pawn: { WHITE: "♙", BLACK: "♟" },
+    Rook: { WHITE: "♖", BLACK: "♜" },
+    Knight: { WHITE: "♘", BLACK: "♞" },
+    Bishop: { WHITE: "♗", BLACK: "♝" },
+    Queen: { WHITE: "♕", BLACK: "♛" },
+    King: { WHITE: "♔", BLACK: "♚" }
+};
+
+const getSymbol = (type: string, color: string): string => {
+    return SYMBOLS[type]?.[color] || "?";
+};

@@ -15,7 +15,7 @@ class Handler: TextWebSocketHandler() {
     val payload = mapper.writeValueAsString(
       mapOf(
         "type" to "INIT",
-        "pieces" to board.pieces
+        "pieces" to board.pieces.values
       )
     )
 
