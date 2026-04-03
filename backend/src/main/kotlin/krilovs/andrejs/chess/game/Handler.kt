@@ -1,44 +1,72 @@
 package krilovs.andrejs.chess.game
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
 
 class Handler: TextWebSocketHandler() {
-  private val sessions = mutableListOf<WebSocketSession>()
   private val mapper = jacksonObjectMapper()
+  private val sessions = mutableSetOf<WebSocketSession>()
   private val board = Board().apply { setupDefaultPiecePositions() }
 
   override fun afterConnectionEstablished(session: WebSocketSession) {
-    sessions.add(session)
-    val payload = mapper.writeValueAsString(
-      mapOf(
-        "type" to "INIT",
-        "pieces" to board.pieces.values,
-        "availableMoves" to board.pieces[Coordinates('b', 8)]?.getAvailableMoveSquares(board)
-      )
-    )
+    sessions += session
+    session.sendJson("INIT", mapOf("pieces" to board.getPieces()))
+  }
 
-    session.sendMessage(TextMessage(payload))
+  override fun afterConnectionClosed(session: WebSocketSession, status: org.springframework.web.socket.CloseStatus) {
+    sessions -= session
   }
 
   override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
     val data = mapper.readTree(message.payload)
+    val type = data["type"]?.asText() ?: return
 
-    if (data["type"].asText() == "GET_MOVES") {
-      val from = data["from"].asText()
-      val coord = Coordinates(from[0], from[1].digitToInt())
-      val moves = board.pieces[coord]?.getAvailableMoveSquares(board)?.map { "${it.file}${it.rank}" }
-
-      val payload = mapper.writeValueAsString(
-        mapOf(
-          "type" to "MOVES",
-          "moves" to moves
-        )
-      )
-
-      session.sendMessage(TextMessage(payload))
+    when (type) {
+      "GET_MOVES" -> handleGetMoves(session, data)
+      "MOVE" -> handleMove(session, data)
     }
   }
+
+  private fun handleGetMoves(session: WebSocketSession, data: JsonNode) {
+    val coord = data["from"]?.asText()?.toCoordinates() ?: return
+
+    val moves = board.getPiece(coord)
+      ?.getAvailableMoveSquares(board)
+      ?.map { "${it.file}${it.rank}" }
+      ?: emptyList()
+
+    session.sendJson("MOVES", mapOf("moves" to moves))
+  }
+
+  private fun handleMove(session: WebSocketSession, data: JsonNode) {
+    val from = data["from"]?.asText()?.toCoordinates() ?: return
+    val to = data["to"]?.asText()?.toCoordinates() ?: return
+    val result = board.tryMove(from, to) ?: return
+
+    if (result.isNotEmpty()) {
+      return session.sendJson(
+        "INVALID_MOVE",
+        mapOf(
+          "availableMoves" to result.map { "${it.file}${it.rank}" }
+        )
+      )
+    }
+
+    broadcast("STATE", mapOf("pieces" to board.getPieces()))
+  }
+
+  private fun WebSocketSession.sendJson(type: String, payload: Map<String, Any?>) {
+    val json = mapper.writeValueAsString(payload + ("type" to type))
+    sendMessage(TextMessage(json))
+  }
+
+  private fun broadcast(type: String, payload: Map<String, Any?>) {
+    val json = mapper.writeValueAsString(payload + ("type" to type))
+    sessions.forEach { it.sendMessage(TextMessage(json)) }
+  }
+
+  private fun String.toCoordinates(): Coordinates = Coordinates(this[0], this[1].digitToInt())
 }

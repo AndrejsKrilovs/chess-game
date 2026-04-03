@@ -20,6 +20,6 @@ abstract class Piece(
   protected abstract fun getPieceMoves(): Set<CoordinatesShift>
 
   private fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
-    return board.pieces[coord] == null || board.pieces[coord]?.color != color
+    return board.getPiece(coord) == null || board.getPiece(coord)?.color != color
   }
 }

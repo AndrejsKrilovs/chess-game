@@ -9,8 +9,13 @@ import krilovs.andrejs.chess.piece.Queen
 import krilovs.andrejs.chess.piece.Rook
 
 class Board {
-  val pieces: MutableMap<Coordinates, Piece> = mutableMapOf()
+  private val pieces: MutableMap<Coordinates, Piece> = mutableMapOf()
+
+  fun getPieces(): Collection<Piece> = pieces.values
+  fun getPiece(coord: Coordinates): Piece? = pieces[coord]
   fun setupDefaultPiecePositions() {
+    pieces.clear()
+
     ('a'..'h').forEach {
       placeLine(::Pawn, Color.WHITE, 2, it)
       placeLine(::Pawn, Color.BLACK, 7, it)
@@ -30,6 +35,21 @@ class Board {
 
     placeLine(::King, Color.WHITE, 1, 'e')
     placeLine(::King, Color.BLACK, 8, 'e')
+  }
+
+  fun move(from: Coordinates, to: Coordinates) {
+    val piece = pieces.remove(from) ?: return
+    pieces.remove(to)
+    piece.coordinates = to
+    pieces[to] = piece
+  }
+
+  fun tryMove(from: Coordinates, to: Coordinates): Set<Coordinates>? {
+    val piece = getPiece(from) ?: return null
+    val moves = piece.getAvailableMoveSquares(this)
+    if (to !in moves) return moves
+    move(from, to)
+    return emptySet()
   }
 
   private fun placeLine(

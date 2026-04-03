@@ -51,4 +51,20 @@ export class BoardView {
 
         return board;
     }
+
+		setPiece(coord: string, symbol: string) {
+      const cell = this.element.querySelector(`[data-pos="${coord}"]`);
+      if (!cell) return;
+
+      cell.textContent = "";
+      cell.appendChild(document.createTextNode(symbol));
+    }
+
+    clear() {
+      this.element.querySelectorAll(".cell").forEach(c => {
+          if (!c.querySelector(".coord")) {
+              c.textContent = "";
+          }
+      });
+    }
 }
