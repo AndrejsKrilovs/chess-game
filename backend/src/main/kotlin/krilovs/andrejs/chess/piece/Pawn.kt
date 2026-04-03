@@ -12,38 +12,18 @@ class Pawn(color: Color, coordinates: Coordinates) : Piece(color, coordinates) {
 
     return buildSet {
       add(CoordinatesShift(0, dir))
+      add(CoordinatesShift(1, dir))
+      add(CoordinatesShift(-1, dir))
       if (coordinates.rank == startRank) {
         add(CoordinatesShift(0, 2 * dir))
       }
     }
   }
 
-  override fun getAvailableMoveSquares(board: Board): Set<Coordinates> {
-    val result = mutableSetOf<Coordinates>()
-    val dir = if (color == Color.WHITE) 1 else -1
-    val startRank = if (color == Color.WHITE) 2 else 7
-    val oneStep = coordinates.shift(CoordinatesShift(0, dir))
-
-    if (oneStep != null && board.getPiece(oneStep) == null) {
-      result.add(oneStep)
-      val twoStep = coordinates.shift(CoordinatesShift(0, 2 * dir))
-      if (coordinates.rank == startRank &&
-        twoStep != null &&
-        board.getPiece(twoStep) == null
-      ) {
-        result.add(twoStep)
-      }
+  override fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
+    if (coordinates.file == coord.file) {
+      return board.getPiece(coord) == null
     }
-
-    listOf(1, -1).forEach { dx ->
-      val target = coordinates.shift(CoordinatesShift(dx, dir)) ?: return@forEach
-      val piece = board.getPiece(target)
-
-      if (piece != null && piece.color != color) {
-        result.add(target)
-      }
-    }
-
-    return result
+    return board.getPiece(coord) != null && super.isSquareAvailable(coord, board)
   }
 }

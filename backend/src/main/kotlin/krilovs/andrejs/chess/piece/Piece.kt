@@ -11,7 +11,7 @@ abstract class Piece(
 ) {
   val type get() = this::class.simpleName ?: "UNKNOWN"
 
-  open fun getAvailableMoveSquares(board: Board): Set<Coordinates> =
+  fun getAvailableMoveSquares(board: Board): Set<Coordinates> =
     getPieceMoves()
       .mapNotNull { coordinates.shift(it) }
       .filter { isSquareAvailable(it, board) }
@@ -19,7 +19,7 @@ abstract class Piece(
 
   protected abstract fun getPieceMoves(): Set<CoordinatesShift>
 
-  private fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
+  protected open fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
     return board.getPiece(coord) == null || board.getPiece(coord)?.color != color
   }
 }
