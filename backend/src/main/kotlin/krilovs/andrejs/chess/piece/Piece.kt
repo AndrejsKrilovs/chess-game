@@ -22,4 +22,6 @@ abstract class Piece(
   protected open fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
     return board.getPiece(coord) == null || board.getPiece(coord)?.color != color
   }
+
+  open fun getAttackedSquares(board: Board): Set<Coordinates> = getAvailableMoveSquares(board)
 }

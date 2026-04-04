@@ -26,4 +26,12 @@ class Pawn(color: Color, coordinates: Coordinates) : Piece(color, coordinates) {
     }
     return board.getPiece(coord) != null && super.isSquareAvailable(coord, board)
   }
+
+  override fun getAttackedSquares(board: Board): Set<Coordinates> {
+    val dir = if (color == Color.WHITE) 1 else -1
+    return listOf(
+      CoordinatesShift(1, dir),
+      CoordinatesShift(-1, dir)
+    ).mapNotNull { coordinates.shift(it) }.toSet()
+  }
 }

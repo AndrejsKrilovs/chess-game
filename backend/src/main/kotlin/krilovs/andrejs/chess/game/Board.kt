@@ -57,6 +57,12 @@ class Board {
     return emptySet()
   }
 
+  fun isSquareUnderAttack(coord: Coordinates, byColor: Color): Boolean {
+    return pieces.values
+      .filter { it.color == byColor }
+      .any { it.getAttackedSquares(this).contains(coord) }
+  }
+
   private fun placeLine(
     factory: (Color, Coordinates) -> Piece,
     color: Color,
