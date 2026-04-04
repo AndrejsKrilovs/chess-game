@@ -31,14 +31,12 @@ class Handler: TextWebSocketHandler() {
   }
 
   private fun handleGetMoves(session: WebSocketSession, data: JsonNode) {
-    val coord = data["from"]?.asText()?.toCoordinates() ?: return
-
-    val moves = board.getPiece(coord)
-      ?.getAvailableMoveSquares(board)
-      ?.map { "${it.file}${it.rank}" }
-      ?: emptyList()
-
-    session.sendJson("MOVES", mapOf("moves" to moves))
+    data["from"]?.asText()?.toCoordinates()?.let { coordinates ->
+      session.sendJson(
+        "MOVES",
+        mapOf("moves" to board.getSafeMoves(coordinates).map { "${it.file}${it.rank}" })
+      )
+    }
   }
 
   private fun handleMove(session: WebSocketSession, data: JsonNode) {
@@ -64,5 +62,5 @@ class Handler: TextWebSocketHandler() {
     sessions.forEach { it.sendMessage(TextMessage(json)) }
   }
 
-  private fun String.toCoordinates(): Coordinates = Coordinates(this[0], this[1].digitToInt())
+  private fun String.toCoordinates() = Coordinates(this[0], this[1].digitToInt())
 }

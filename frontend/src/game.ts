@@ -30,6 +30,7 @@ export class Game {
                     this.render(data.pieces);
                     break;
                 case "MOVES":
+										console.log(data.moves);
                     if (!this.selected) return;
                     if (!data.moves?.length) {
                         this.showError(`Фигура на ${this.selected} не имеет ходов`);

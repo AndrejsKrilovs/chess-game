@@ -49,8 +49,9 @@ class Board {
     val piece = getPiece(from) ?: return null
     if (piece.color != currentTurn) return emptySet()
 
-    val moves = piece.getAvailableMoveSquares(this)
-    if (to !in moves) return moves
+    val validMoves = getSafeMoves(from)
+    if (to !in validMoves) return validMoves
+
     move(from, to)
     currentTurn = currentTurn.opposite()
     return emptySet()
@@ -58,6 +59,13 @@ class Board {
 
   fun isSquareUnderAttack(coord: Coordinates, byColor: Color): Boolean =
     pieces.values.any { it.color == byColor && coord in it.getAttackedSquares(this) }
+
+  fun getSafeMoves(coord: Coordinates): Set<Coordinates> =
+    getPiece(coord)
+      ?.getAvailableMoveSquares(this)
+      ?.filter { isMoveSafe(coord, it) }
+      ?.toSet()
+      ?: emptySet()
 
   private fun placeLine(
     factory: (Color, Coordinates) -> Piece,
@@ -70,4 +78,24 @@ class Board {
       pieces[piece.coordinates] = piece
     }
   }
+
+  private fun isMoveSafe(from: Coordinates, to: Coordinates): Boolean {
+    val piece = getPiece(from) ?: return false
+    val captured = getPiece(to)
+    move(from, to)
+
+    return try {
+      val kingPos = findKing(piece.color)
+      !isSquareUnderAttack(kingPos, piece.color.opposite())
+    } finally {
+      move(to, from)
+      captured?.let {
+        it.coordinates = to
+        pieces[to] = it
+      }
+    }
+  }
+
+  private fun findKing(color: Color): Coordinates =
+    pieces.values.first { it is King && it.color == color }.coordinates
 }
