@@ -56,10 +56,8 @@ class Handler: TextWebSocketHandler() {
     broadcast("STATE", mapOf("pieces" to board.getPieces(), "turn" to board.currentTurn.name))
   }
 
-  private fun WebSocketSession.sendJson(type: String, payload: Map<String, Any?>) {
-    val json = mapper.writeValueAsString(payload + ("type" to type))
-    sendMessage(TextMessage(json))
-  }
+  private fun WebSocketSession.sendJson(type: String, payload: Map<String, Any?>) =
+    sendMessage(TextMessage(mapper.writeValueAsString(payload + ("type" to type))))
 
   private fun broadcast(type: String, payload: Map<String, Any?>) {
     val json = mapper.writeValueAsString(payload + ("type" to type))

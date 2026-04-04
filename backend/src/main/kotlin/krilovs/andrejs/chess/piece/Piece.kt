@@ -13,15 +13,14 @@ abstract class Piece(
 
   fun getAvailableMoveSquares(board: Board): Set<Coordinates> =
     getPieceMoves()
-      .mapNotNull { coordinates.shift(it) }
+      .mapNotNull(coordinates::shift)
       .filter { isSquareAvailable(it, board) }
       .toSet()
 
   protected abstract fun getPieceMoves(): Set<CoordinatesShift>
 
-  protected open fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
-    return board.getPiece(coord) == null || board.getPiece(coord)?.color != color
-  }
+  protected open fun isSquareAvailable(coord: Coordinates, board: Board): Boolean =
+    board.getPiece(coord) == null || board.getPiece(coord)?.color != color
 
   open fun getAttackedSquares(board: Board): Set<Coordinates> = getAvailableMoveSquares(board)
 }

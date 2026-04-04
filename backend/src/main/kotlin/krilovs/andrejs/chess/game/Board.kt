@@ -52,16 +52,12 @@ class Board {
     val moves = piece.getAvailableMoveSquares(this)
     if (to !in moves) return moves
     move(from, to)
-
-    currentTurn = if (currentTurn == Color.WHITE) Color.BLACK else Color.WHITE
+    currentTurn = currentTurn.opposite()
     return emptySet()
   }
 
-  fun isSquareUnderAttack(coord: Coordinates, byColor: Color): Boolean {
-    return pieces.values
-      .filter { it.color == byColor }
-      .any { it.getAttackedSquares(this).contains(coord) }
-  }
+  fun isSquareUnderAttack(coord: Coordinates, byColor: Color): Boolean =
+    pieces.values.any { it.color == byColor && coord in it.getAttackedSquares(this) }
 
   private fun placeLine(
     factory: (Color, Coordinates) -> Piece,

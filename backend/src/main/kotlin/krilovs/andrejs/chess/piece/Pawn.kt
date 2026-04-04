@@ -21,17 +21,14 @@ class Pawn(color: Color, coordinates: Coordinates) : Piece(color, coordinates) {
   }
 
   override fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
-    if (coordinates.file == coord.file) {
-      return board.getPiece(coord) == null
-    }
-    return board.getPiece(coord) != null && super.isSquareAvailable(coord, board)
+    val target = board.getPiece(coord)
+    return if (coordinates.file == coord.file) { target == null } else { target?.color != color }
   }
 
   override fun getAttackedSquares(board: Board): Set<Coordinates> {
     val dir = if (color == Color.WHITE) 1 else -1
-    return listOf(
-      CoordinatesShift(1, dir),
-      CoordinatesShift(-1, dir)
-    ).mapNotNull { coordinates.shift(it) }.toSet()
+    return listOf(1, -1)
+      .mapNotNull { coordinates.shift(CoordinatesShift(it, dir)) }
+      .toSet()
   }
 }

@@ -15,12 +15,9 @@ class King(color: Color, coordinates: Coordinates) : Piece(color, coordinates) {
     }
   }
 
-  override fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
-    return super.isSquareAvailable(coord, board) && !board.isSquareUnderAttack(coord,color.opposite())
-  }
+  override fun isSquareAvailable(coord: Coordinates, board: Board): Boolean =
+    super.isSquareAvailable(coord, board) && !board.isSquareUnderAttack(coord, color.opposite())
 
   override fun getAttackedSquares(board: Board): Set<Coordinates> =
-    getPieceMoves()
-      .mapNotNull { coordinates.shift(it) }
-      .toSet()
+    getPieceMoves().mapNotNull(coordinates::shift).toSet()
 }
