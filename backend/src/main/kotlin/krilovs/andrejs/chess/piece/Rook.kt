@@ -17,12 +17,18 @@ class Rook(color: Color, coordinates: Coordinates) : Piece(color, coordinates) {
   }
 
   override fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
-    return super.isSquareAvailable(coord, board) &&
-      BoardUtils()
-        .getVerticalCoordinatesInRange(coordinates, coord)
-        .none { board.getPiece(it) != null } &&
-      BoardUtils()
-        .getHorizontalCoordinatesInRange(coordinates, coord)
-        .none { board.getPiece(it) != null }
+    val utils = BoardUtils()
+
+    return when {
+      coordinates.file == coord.file ->
+        utils.getVerticalCoordinatesInRange(coordinates, coord)
+          .none { board.getPiece(it) != null }
+
+      coordinates.rank == coord.rank ->
+        utils.getHorizontalCoordinatesInRange(coordinates, coord)
+          .none { board.getPiece(it) != null }
+
+      else -> false
+    } && super.isSquareAvailable(coord, board)
   }
 }
