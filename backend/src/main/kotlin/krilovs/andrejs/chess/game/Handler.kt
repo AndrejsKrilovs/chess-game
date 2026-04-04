@@ -51,7 +51,14 @@ class Handler: TextWebSocketHandler() {
       )
     }
 
-    broadcast("STATE", mapOf("pieces" to board.getPieces(), "turn" to board.currentTurn.name))
+    broadcast(
+      "STATE",
+      mapOf(
+        "pieces" to board.getPieces(),
+        "turn" to board.currentTurn.name,
+        "state" to board.getGameState(board.currentTurn)
+      )
+    )
   }
 
   private fun WebSocketSession.sendJson(type: String, payload: Map<String, Any?>) =

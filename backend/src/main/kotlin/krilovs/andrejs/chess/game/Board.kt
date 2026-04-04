@@ -67,6 +67,18 @@ class Board {
       ?.toSet()
       ?: emptySet()
 
+  fun getGameState(color: Color): GameState {
+    val inCheck = isCheck(color)
+    val hasMoves = hasAnyValidMove(color)
+
+    return when {
+      inCheck && !hasMoves -> GameState.CHECKMATE
+      !inCheck && !hasMoves -> GameState.STALEMATE
+      inCheck -> GameState.CHECK
+      else -> GameState.NORMAL
+    }
+  }
+
   private fun placeLine(
     factory: (Color, Coordinates) -> Piece,
     color: Color,
@@ -85,9 +97,9 @@ class Board {
     move(from, to)
 
     return try {
-      val kingPos = findKing(piece.color)
-      !isSquareUnderAttack(kingPos, piece.color.opposite())
-    } finally {
+      !isSquareUnderAttack(findKing(piece.color), piece.color.opposite())
+    }
+    finally {
       move(to, from)
       captured?.let {
         it.coordinates = to
@@ -98,4 +110,14 @@ class Board {
 
   private fun findKing(color: Color): Coordinates =
     pieces.values.first { it is King && it.color == color }.coordinates
+
+  private fun isCheck(color: Color): Boolean =
+    isSquareUnderAttack(findKing(color), color.opposite())
+
+  private fun hasAnyValidMove(color: Color): Boolean =
+    pieces
+      .filterValues { it.color == color }
+      .any {
+          (c, piece) -> piece.getAvailableMoveSquares(this).any { isMoveSafe(c, it) }
+      }
 }
