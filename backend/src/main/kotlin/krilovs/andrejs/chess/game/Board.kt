@@ -10,39 +10,92 @@ import krilovs.andrejs.chess.piece.Rook
 
 class Board {
   var currentTurn: Color = Color.WHITE
-  private val pieces: MutableMap<Coordinates, Piece> = mutableMapOf()
+  private val board = arrayOfNulls<Piece>(64)
 
-  fun getPieces(): Collection<Piece> = pieces.values
-  fun getPiece(coord: Coordinates): Piece? = pieces[coord]
-  fun setupDefaultPiecePositions() {
-    pieces.clear()
+  fun getPiece(cord: Coordinates): Piece? = board[index(cord)]
 
-    ('a'..'h').forEach {
-      placeLine(::Pawn, Color.WHITE, 2, it)
-      placeLine(::Pawn, Color.BLACK, 7, it)
+  fun getPieces(): Collection<Piece> {
+    val result = ArrayList<Piece>()
+    for (piece in board) {
+      if (piece != null) result.add(piece)
+    }
+    return result
+  }
+
+  fun loadFromFEN(fen: String) {
+    board.fill(null)
+
+    val parts = fen.split(" ")
+    val boardPart = parts[0]
+    val turnPart = parts[1]
+
+    var rank = 8
+    var file = 'a'
+
+    for (char in boardPart) {
+      when {
+        char == '/' -> {
+          rank--
+          file = 'a'
+        }
+        char.isDigit() -> {
+          file = (file.code + char.digitToInt()).toChar()
+        }
+        else -> {
+          val color = if (char.isUpperCase()) Color.WHITE else Color.BLACK
+          val cord = Coordinates(file, rank)
+          val piece = createPiece(char.lowercaseChar(), color, cord)
+
+          board[index(cord)] = piece
+          file++
+        }
+      }
     }
 
-    placeLine(::Rook, Color.WHITE, 1, 'a', 'h')
-    placeLine(::Rook, Color.BLACK, 8, 'a', 'h')
+    currentTurn = if (turnPart == "w") Color.WHITE else Color.BLACK
+  }
 
-    placeLine(::Knight, Color.WHITE, 1, 'b', 'g')
-    placeLine(::Knight, Color.BLACK, 8, 'b', 'g')
+  fun toFEN(): String {
+    val sb = StringBuilder()
 
-    placeLine(::Bishop, Color.WHITE, 1, 'c', 'f')
-    placeLine(::Bishop, Color.BLACK, 8, 'c', 'f')
+    for (rank in 8 downTo 1) {
+      var empty = 0
 
-    placeLine(::Queen, Color.WHITE, 1, 'd')
-    placeLine(::Queen, Color.BLACK, 8, 'd')
+      for (file in 'a'..'h') {
+        val piece = board[index(Coordinates(file, rank))]
 
-    placeLine(::King, Color.WHITE, 1, 'e')
-    placeLine(::King, Color.BLACK, 8, 'e')
+        if (piece == null) {
+          empty++
+        } else {
+          if (empty > 0) {
+            sb.append(empty)
+            empty = 0
+          }
+
+          sb.append(pieceToChar(piece))
+        }
+      }
+
+      if (empty > 0) sb.append(empty)
+      if (rank > 1) sb.append("/")
+    }
+
+    sb.append(" ")
+    sb.append(if (currentTurn == Color.WHITE) "w" else "b")
+    sb.append(" -")
+    sb.append(" -")
+    sb.append(" 0 1")
+    return sb.toString()
   }
 
   fun move(from: Coordinates, to: Coordinates) {
-    val piece = pieces.remove(from) ?: return
-    pieces.remove(to)
-    piece.coordinates = to
-    pieces[to] = piece
+    val fromIdx = index(from)
+    val toIdx = index(to)
+    val piece = board[fromIdx] ?: return
+
+    board[toIdx] = piece
+    board[fromIdx] = null
+    piece.coordinates = to // пока оставляем (для совместимости)
   }
 
   fun tryMove(from: Coordinates, to: Coordinates): Set<Coordinates>? {
@@ -57,8 +110,13 @@ class Board {
     return emptySet()
   }
 
-  fun isSquareUnderAttack(coord: Coordinates, byColor: Color): Boolean =
-    pieces.values.any { it.color == byColor && coord in it.getAttackedSquares(this) }
+  fun isSquareUnderAttack(coord: Coordinates, byColor: Color): Boolean {
+    for (piece in board) {
+      if (piece == null || piece.color != byColor) continue
+      if (coord in piece.getAttackedSquares(this)) return true
+    }
+    return false
+  }
 
   fun getSafeMoves(coord: Coordinates): Set<Coordinates> =
     getPiece(coord)
@@ -79,45 +137,89 @@ class Board {
     }
   }
 
-  private fun placeLine(
-    factory: (Color, Coordinates) -> Piece,
-    color: Color,
-    rank: Int,
-    vararg files: Char
-  ) {
-    files.forEach { file ->
-      val piece = factory(color, Coordinates(file, rank))
-      pieces[piece.coordinates] = piece
-    }
+  private fun isMoveSafe(from: Coordinates, to: Coordinates): Boolean {
+    val fromIdx = index(from)
+    val toIdx = index(to)
+    val piece = board[fromIdx] ?: return false
+    val captured = board[toIdx]
+
+    board[toIdx] = piece
+    board[fromIdx] = null
+    piece.coordinates = to
+
+    val safe = !isSquareUnderAttack(findKing(piece.color), piece.color.opposite())
+    board[fromIdx] = piece
+    board[toIdx] = captured
+    piece.coordinates = from
+    captured?.coordinates = to
+
+    return safe
   }
 
-  private fun isMoveSafe(from: Coordinates, to: Coordinates): Boolean {
-    val piece = getPiece(from) ?: return false
-    val captured = getPiece(to)
-    move(from, to)
-
-    return try {
-      !isSquareUnderAttack(findKing(piece.color), piece.color.opposite())
-    }
-    finally {
-      move(to, from)
-      captured?.let {
-        it.coordinates = to
-        pieces[to] = it
+  private fun findKing(color: Color): Coordinates {
+    for (piece in board) {
+      if (piece is King && piece.color == color) {
+        return piece.coordinates
       }
     }
+    error("King not found")
   }
-
-  private fun findKing(color: Color): Coordinates =
-    pieces.values.first { it is King && it.color == color }.coordinates
 
   private fun isCheck(color: Color): Boolean =
     isSquareUnderAttack(findKing(color), color.opposite())
 
-  private fun hasAnyValidMove(color: Color): Boolean =
-    pieces
-      .filterValues { it.color == color }
-      .any {
-          (c, piece) -> piece.getAvailableMoveSquares(this).any { isMoveSafe(c, it) }
+  private fun hasAnyValidMove(color: Color): Boolean {
+    for (i in board.indices) {
+      val piece = board[i] ?: continue
+      if (piece.color != color) continue
+
+      val from = toCoordinates(i)
+      for (move in piece.getAvailableMoveSquares(this)) {
+        if (isMoveSafe(from, move)) return true
       }
+    }
+    return false
+  }
+
+  private fun createPiece(
+    type: Char,
+    color: Color,
+    cord: Coordinates
+  ): Piece {
+    return when (type) {
+      'p' -> Pawn(color, cord)
+      'r' -> Rook(color, cord)
+      'n' -> Knight(color, cord)
+      'b' -> Bishop(color, cord)
+      'q' -> Queen(color, cord)
+      'k' -> King(color, cord)
+      else -> throw IllegalArgumentException("Unknown piece: $type")
+    }
+  }
+
+  private fun pieceToChar(piece: Piece): Char {
+    val char = when (piece) {
+      is Pawn -> 'p'
+      is Rook -> 'r'
+      is Knight -> 'n'
+      is Bishop -> 'b'
+      is Queen -> 'q'
+      is King -> 'k'
+      else -> throw IllegalArgumentException("Unknown piece")
+    }
+
+    return if (piece.color == Color.WHITE) char.uppercaseChar() else char
+  }
+
+  private fun index(coord: Coordinates): Int {
+    val file = coord.file - 'a'
+    val rank = coord.rank - 1
+    return rank * 8 + file
+  }
+
+  private fun toCoordinates(index: Int): Coordinates {
+    val file = 'a' + (index % 8)
+    val rank = (index / 8) + 1
+    return Coordinates(file, rank)
+  }
 }

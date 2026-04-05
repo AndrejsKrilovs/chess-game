@@ -9,7 +9,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
 class Handler: TextWebSocketHandler() {
   private val mapper = jacksonObjectMapper()
   private val sessions = mutableSetOf<WebSocketSession>()
-  private val board = Board().apply { setupDefaultPiecePositions() }
+  private val board = Board().apply { loadFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") }
 
   override fun afterConnectionEstablished(session: WebSocketSession) {
     sessions += session
