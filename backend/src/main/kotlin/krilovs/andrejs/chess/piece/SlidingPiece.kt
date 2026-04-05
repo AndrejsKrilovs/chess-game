@@ -1,41 +1,37 @@
 package krilovs.andrejs.chess.piece
 
-import krilovs.andrejs.chess.game.*
+import krilovs.andrejs.chess.game.Board
+import krilovs.andrejs.chess.game.Color
+import krilovs.andrejs.chess.game.Move
 
 abstract class SlidingPiece(
   color: Color,
-  coordinates: Coordinates,
-  private val slidingType: SlidingType
-): Piece(color, coordinates) {
+  square: Int,
+  private val directions: IntArray
+) : Piece(color, square) {
 
-  override fun isSquareAvailable(coord: Coordinates, board: Board): Boolean {
-    val dx = (coord.file.code - coordinates.file.code).coerceIn(-1, 1)
-    val dy = (coord.rank - coordinates.rank).coerceIn(-1, 1)
-    val direction = CoordinatesShift(dx, dy)
-    val isStraight = coordinates.file == coord.file || coordinates.rank == coord.rank
-    val isDiagonal =
-      kotlin.math.abs(coord.file.code - coordinates.file.code) == kotlin.math.abs(coord.rank - coordinates.rank)
+  override fun generateMoves(board: Board, moves: MutableList<Move>) {
+    for (dir in directions) {
+      var from = square
 
-    val validDirection = when (slidingType) {
-      SlidingType.DIAGONAL -> isDiagonal
-      SlidingType.STRAIGHT -> isStraight
-      SlidingType.BOTH -> isStraight || isDiagonal
+      while (true) {
+        val to = from + dir
+        if (!board.isInside(to)) break
+        if (kotlin.math.abs(board.file(to) - board.file(from)) > 1) break
+
+        val target = board.getPiece(to)
+        if (target == null) {
+          moves.add(Move(square, to, this, null))
+        }
+        else {
+          if (target.color != color) {
+            moves.add(Move(square, to, this, target))
+          }
+          break
+        }
+
+        from = to
+      }
     }
-
-    if (!validDirection) return false
-
-    return getCoordinatesInRange(coordinates, coord, direction)
-      .none { board.getPiece(it) != null } && super.isSquareAvailable(coord, board)
-  }
-
-  private fun getCoordinatesInRange(
-    source: Coordinates,
-    destination: Coordinates,
-    direction: CoordinatesShift
-  ): List<Coordinates> {
-    return generateSequence(source) { it.shift(direction) }
-      .drop(1)
-      .takeWhile { it != destination }
-      .toList()
   }
 }

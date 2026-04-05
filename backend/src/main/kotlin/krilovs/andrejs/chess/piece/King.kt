@@ -2,22 +2,18 @@ package krilovs.andrejs.chess.piece
 
 import krilovs.andrejs.chess.game.Board
 import krilovs.andrejs.chess.game.Color
-import krilovs.andrejs.chess.game.Coordinates
-import krilovs.andrejs.chess.game.CoordinatesShift
+import krilovs.andrejs.chess.game.Move
 
-class King(color: Color, coordinates: Coordinates) : Piece(color, coordinates) {
-  override fun getPieceMoves(): Set<CoordinatesShift> = buildSet {
-    (-1..1).filter { it != 0 }.forEach {
-      add(CoordinatesShift(it, it))
-      add(CoordinatesShift(it, -it))
-      add(CoordinatesShift(it, 0))
-      add(CoordinatesShift(0, it))
+class King(color: Color, square: Int) : Piece(color, square) {
+  private val offsets = intArrayOf(8, -8, 1, -1, 9, -9, 7, -7)
+
+  override fun generateMoves(board: Board, moves: MutableList<Move>) {
+    for (offset in offsets) {
+      val to = square + offset
+      if (!board.isInside(to)) continue
+
+      if (kotlin.math.abs(board.file(square) - board.file(to)) > 1) continue
+      addMove(board, moves, to)
     }
   }
-
-  override fun isSquareAvailable(coord: Coordinates, board: Board): Boolean =
-    super.isSquareAvailable(coord, board) && !board.isSquareUnderAttack(coord, color.opposite())
-
-  override fun getAttackedSquares(board: Board): Set<Coordinates> =
-    getPieceMoves().mapNotNull(coordinates::shift).toSet()
 }

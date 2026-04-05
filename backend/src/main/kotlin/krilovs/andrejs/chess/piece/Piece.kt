@@ -2,25 +2,16 @@ package krilovs.andrejs.chess.piece
 
 import krilovs.andrejs.chess.game.Board
 import krilovs.andrejs.chess.game.Color
-import krilovs.andrejs.chess.game.Coordinates
-import krilovs.andrejs.chess.game.CoordinatesShift
+import krilovs.andrejs.chess.game.Move
 
-abstract class Piece(
-  val color: Color,
-  var coordinates: Coordinates
-) {
-  val type get() = this::class.simpleName ?: "UNKNOWN"
+abstract class Piece(val color: Color, var square: Int) {
+  val type: String get() = this::class.simpleName ?: "UNKNOWN"
+  abstract fun generateMoves(board: Board, moves: MutableList<Move>)
 
-  fun getAvailableMoveSquares(board: Board): Set<Coordinates> =
-    getPieceMoves()
-      .mapNotNull(coordinates::shift)
-      .filter { isSquareAvailable(it, board) }
-      .toSet()
-
-  protected abstract fun getPieceMoves(): Set<CoordinatesShift>
-
-  protected open fun isSquareAvailable(coord: Coordinates, board: Board): Boolean =
-    board.getPiece(coord) == null || board.getPiece(coord)?.color != color
-
-  open fun getAttackedSquares(board: Board): Set<Coordinates> = getAvailableMoveSquares(board)
+  protected fun addMove(board: Board, moves: MutableList<Move>, to: Int) {
+    val target = board.getPiece(to)
+    if (target == null || target.color != color) {
+      moves.add(Move(square, to, this, target))
+    }
+  }
 }

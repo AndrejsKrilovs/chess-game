@@ -9,44 +9,30 @@ import krilovs.andrejs.chess.piece.Queen
 import krilovs.andrejs.chess.piece.Rook
 
 class Board {
-  var currentTurn: Color = Color.WHITE
+  var currentTurn = Color.WHITE
   private val board = arrayOfNulls<Piece>(64)
 
-  fun getPiece(cord: Coordinates): Piece? = board[index(cord)]
-
-  fun getPieces(): Collection<Piece> {
-    val result = ArrayList<Piece>()
-    for (piece in board) {
-      if (piece != null) result.add(piece)
-    }
-    return result
-  }
+  fun getPiece(square: Int): Piece? = board[square]
+  fun getPieces(): List<Piece> = board.filterNotNull()
 
   fun loadFromFEN(fen: String) {
     board.fill(null)
-
-    val parts = fen.split(" ")
-    val boardPart = parts[0]
-    val turnPart = parts[1]
-
-    var rank = 8
-    var file = 'a'
+    val (boardPart, turnPart) = fen.split(" ")
+    var rank = 7
+    var file = 0
 
     for (char in boardPart) {
       when {
         char == '/' -> {
           rank--
-          file = 'a'
+          file = 0
         }
-        char.isDigit() -> {
-          file = (file.code + char.digitToInt()).toChar()
-        }
+        char.isDigit() -> file += char.digitToInt()
         else -> {
           val color = if (char.isUpperCase()) Color.WHITE else Color.BLACK
-          val cord = Coordinates(file, rank)
-          val piece = createPiece(char.lowercaseChar(), color, cord)
+          val square = rank * 8 + file
 
-          board[index(cord)] = piece
+          board[square] = createPiece(char.lowercaseChar(), color, square)
           file++
         }
       }
@@ -56,89 +42,38 @@ class Board {
   }
 
   fun toFEN(): String {
-    val sb = StringBuilder()
+    return buildString {
+      for (rank in 7 downTo 0) {
+        var empty = 0
 
-    for (rank in 8 downTo 1) {
-      var empty = 0
-
-      for (file in 'a'..'h') {
-        val piece = board[index(Coordinates(file, rank))]
-
-        if (piece == null) {
-          empty++
-        } else {
-          if (empty > 0) {
-            sb.append(empty)
-            empty = 0
+        for (file in 0..7) {
+          val piece = board[rank * 8 + file]
+          if (piece == null) {
+            empty++
           }
-
-          sb.append(pieceToChar(piece))
+          else {
+            if (empty > 0) {
+              append(empty)
+              empty = 0
+            }
+            append(pieceToChar(piece))
+          }
         }
+
+        if (empty > 0) append(empty)
+        if (rank > 0) append("/")
       }
 
-      if (empty > 0) sb.append(empty)
-      if (rank > 1) sb.append("/")
-    }
-
-    sb.append(" ")
-    sb.append(if (currentTurn == Color.WHITE) "w" else "b")
-    sb.append(" -")
-    sb.append(" -")
-    sb.append(" 0 1")
-    return sb.toString()
-  }
-
-  fun tryMove(from: Coordinates, to: Coordinates): Set<Coordinates>? {
-    val piece = getPiece(from) ?: return null
-    if (piece.color != currentTurn) return emptySet()
-
-    val validMoves = getSafeMoves(from)
-    if (to !in validMoves) return validMoves
-
-    val fromIdx = index(from)
-    val toIdx = index(to)
-    val move = Move(
-      from = fromIdx,
-      to = toIdx,
-      piece = board[fromIdx] ?: return emptySet(),
-      captured = board[toIdx]
-    )
-
-    makeMove(move)
-    return emptySet()
-  }
-
-  fun isSquareUnderAttack(coord: Coordinates, byColor: Color): Boolean {
-    for (piece in board) {
-      if (piece == null || piece.color != byColor) continue
-      if (coord in piece.getAttackedSquares(this)) return true
-    }
-    return false
-  }
-
-  fun getSafeMoves(coord: Coordinates): Set<Coordinates> =
-    getPiece(coord)
-      ?.getAvailableMoveSquares(this)
-      ?.filter { isMoveSafe(coord, it) }
-      ?.toSet()
-      ?: emptySet()
-
-  fun getGameState(color: Color): GameState {
-    val inCheck = isCheck(color)
-    val hasMoves = hasAnyValidMove(color)
-
-    return when {
-      inCheck && !hasMoves -> GameState.CHECKMATE
-      !inCheck && !hasMoves -> GameState.STALEMATE
-      inCheck -> GameState.CHECK
-      else -> GameState.NORMAL
+      append(" ")
+      append(if (currentTurn == Color.WHITE) "w" else "b")
+      append(" - - 0 1")
     }
   }
 
   fun makeMove(move: Move) {
     board[move.to] = move.piece
     board[move.from] = null
-    move.piece.coordinates = toCoordinates(move.to)
+    move.piece.square = move.to
     currentTurn = currentTurn.opposite()
   }
 
@@ -146,93 +81,55 @@ class Board {
     currentTurn = currentTurn.opposite()
     board[move.from] = move.piece
     board[move.to] = move.captured
-    move.piece.coordinates = toCoordinates(move.from)
-    move.captured?.coordinates = toCoordinates(move.to)
+    move.piece.square = move.from
+    move.captured?.square = move.to
   }
 
-  private fun isMoveSafe(from: Coordinates, to: Coordinates): Boolean {
-    val move = Move(
-      from = index(from),
-      to = index(to),
-      piece = board[index(from)] ?: return false,
-      captured = board[index(to)]
-    )
+  fun generateMoves(): List<Move> {
+    val moves = ArrayList<Move>(64)
 
-    makeMove(move)
-
-    val safe = !isSquareUnderAttack(
-      findKing(move.piece.color),
-      move.piece.color.opposite()
-    )
-
-    unmakeMove(move)
-    return safe
-  }
-
-  private fun findKing(color: Color): Coordinates {
     for (piece in board) {
-      if (piece is King && piece.color == color) {
-        return piece.coordinates
-      }
+      if (piece?.color != currentTurn) continue
+      piece.generateMoves(this, moves)
     }
-    error("King not found")
+
+    return moves
   }
 
-  private fun isCheck(color: Color): Boolean =
-    isSquareUnderAttack(findKing(color), color.opposite())
+  fun generateMovesForSquare(square: Int): List<Move> {
+    val piece = board[square] ?: return emptyList()
+    if (piece.color != currentTurn) return emptyList()
 
-  private fun hasAnyValidMove(color: Color): Boolean {
-    for (i in board.indices) {
-      val piece = board[i] ?: continue
-      if (piece.color != color) continue
-
-      val from = toCoordinates(i)
-      for (move in piece.getAvailableMoveSquares(this)) {
-        if (isMoveSafe(from, move)) return true
-      }
-    }
-    return false
+    val moves = ArrayList<Move>(16)
+    piece.generateMoves(this, moves)
+    return moves
   }
 
-  private fun createPiece(
-    type: Char,
-    color: Color,
-    cord: Coordinates
-  ): Piece {
-    return when (type) {
-      'p' -> Pawn(color, cord)
-      'r' -> Rook(color, cord)
-      'n' -> Knight(color, cord)
-      'b' -> Bishop(color, cord)
-      'q' -> Queen(color, cord)
-      'k' -> King(color, cord)
-      else -> throw IllegalArgumentException("Unknown piece: $type")
+  fun file(sq: Int) = sq % 8
+  fun rank(sq: Int) = sq / 8
+  fun isInside(sq: Int) = sq in 0..63
+
+  private fun createPiece(type: Char, color: Color, square: Int): Piece =
+    when (type) {
+      'p' -> Pawn(color, square)
+      'r' -> Rook(color, square)
+      'n' -> Knight(color, square)
+      'b' -> Bishop(color, square)
+      'q' -> Queen(color, square)
+      'k' -> King(color, square)
+      else -> error("Unknown piece: $type")
     }
-  }
 
   private fun pieceToChar(piece: Piece): Char {
-    val char = when (piece) {
+    val c = when (piece) {
       is Pawn -> 'p'
       is Rook -> 'r'
       is Knight -> 'n'
       is Bishop -> 'b'
       is Queen -> 'q'
       is King -> 'k'
-      else -> throw IllegalArgumentException("Unknown piece")
+      else -> error("Unknown piece")
     }
-
-    return if (piece.color == Color.WHITE) char.uppercaseChar() else char
-  }
-
-  private fun index(coord: Coordinates): Int {
-    val file = coord.file - 'a'
-    val rank = coord.rank - 1
-    return rank * 8 + file
-  }
-
-  private fun toCoordinates(index: Int): Coordinates {
-    val file = 'a' + (index % 8)
-    val rank = (index / 8) + 1
-    return Coordinates(file, rank)
+    return if (piece.color == Color.WHITE) c.uppercaseChar() else c
   }
 }
