@@ -88,16 +88,6 @@ class Board {
     return sb.toString()
   }
 
-  fun move(from: Coordinates, to: Coordinates) {
-    val fromIdx = index(from)
-    val toIdx = index(to)
-    val piece = board[fromIdx] ?: return
-
-    board[toIdx] = piece
-    board[fromIdx] = null
-    piece.coordinates = to // пока оставляем (для совместимости)
-  }
-
   fun tryMove(from: Coordinates, to: Coordinates): Set<Coordinates>? {
     val piece = getPiece(from) ?: return null
     if (piece.color != currentTurn) return emptySet()
@@ -105,8 +95,16 @@ class Board {
     val validMoves = getSafeMoves(from)
     if (to !in validMoves) return validMoves
 
-    move(from, to)
-    currentTurn = currentTurn.opposite()
+    val fromIdx = index(from)
+    val toIdx = index(to)
+    val move = Move(
+      from = fromIdx,
+      to = toIdx,
+      piece = board[fromIdx] ?: return emptySet(),
+      captured = board[toIdx]
+    )
+
+    makeMove(move)
     return emptySet()
   }
 
@@ -137,22 +135,37 @@ class Board {
     }
   }
 
+  fun makeMove(move: Move) {
+    board[move.to] = move.piece
+    board[move.from] = null
+    move.piece.coordinates = toCoordinates(move.to)
+    currentTurn = currentTurn.opposite()
+  }
+
+  fun unmakeMove(move: Move) {
+    currentTurn = currentTurn.opposite()
+    board[move.from] = move.piece
+    board[move.to] = move.captured
+    move.piece.coordinates = toCoordinates(move.from)
+    move.captured?.coordinates = toCoordinates(move.to)
+  }
+
   private fun isMoveSafe(from: Coordinates, to: Coordinates): Boolean {
-    val fromIdx = index(from)
-    val toIdx = index(to)
-    val piece = board[fromIdx] ?: return false
-    val captured = board[toIdx]
+    val move = Move(
+      from = index(from),
+      to = index(to),
+      piece = board[index(from)] ?: return false,
+      captured = board[index(to)]
+    )
 
-    board[toIdx] = piece
-    board[fromIdx] = null
-    piece.coordinates = to
+    makeMove(move)
 
-    val safe = !isSquareUnderAttack(findKing(piece.color), piece.color.opposite())
-    board[fromIdx] = piece
-    board[toIdx] = captured
-    piece.coordinates = from
-    captured?.coordinates = to
+    val safe = !isSquareUnderAttack(
+      findKing(move.piece.color),
+      move.piece.color.opposite()
+    )
 
+    unmakeMove(move)
     return safe
   }
 
