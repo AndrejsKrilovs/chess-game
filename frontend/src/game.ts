@@ -14,6 +14,8 @@ export class Game {
     private currentTurn: string = "WHITE";
     private availableMoves: string[] = [];
     private gameOver = false;
+    private historyEl!: HTMLTextAreaElement;
+		private pendingMove: { piece: Piece; from: string; to: string } | null = null;
 
     constructor() {
         this.initUI();
@@ -22,8 +24,32 @@ export class Game {
 
     private initUI() {
         const app = document.getElementById("app")!;
+				const sidebar = document.getElementById("sidebar")!;
+
         this.board = new BoardView(this.onCellClick.bind(this));
         this.board.render(app);
+
+        sidebar.innerHTML = `
+          <button class="btn btn-start">Начать игру</button>
+          <button class="btn btn-end">Завершить игру</button>
+
+          <div class="stats">
+            <div>Победы: 0</div>
+            <div>Поражения: 0</div>
+            <div>Ничьи: 0</div>
+          </div>
+
+          <div class="history">
+            <label>История ходов</label>
+            <textarea readonly></textarea>
+          </div>
+        `;
+
+        const startBtn = sidebar.querySelector(".btn-start")!;
+        const endBtn = sidebar.querySelector(".btn-end")!;
+        this.historyEl = sidebar.querySelector("textarea")!;
+        startBtn.addEventListener("click", () => this.startGame());
+        endBtn.addEventListener("click", () => this.endGame());
     }
 
     private render(pieces: Piece[]) {
@@ -55,6 +81,7 @@ export class Game {
                 this.handleMoves(data);
                 break;
             case "INVALID_MOVE":
+								this.pendingMove = null;
                 this.resetSelection();
                 this.showError(`Некорректный ход. Доступные: ${data.availableMoves.join(", ")}`);
                 break;
@@ -68,6 +95,12 @@ export class Game {
     private handleState(data: any) {
         this.currentTurn = data.turn;
         this.render(data.pieces);
+
+        if (this.pendingMove) {
+          const { piece, from, to } = this.pendingMove;
+          this.addToHistory(piece, from, to);
+          this.pendingMove = null;
+        }
         this.resetSelection();
 
         switch (data.state) {
@@ -128,6 +161,11 @@ export class Game {
     }
 
     private makeMove(to: string) {
+        if (!this.selected) return;
+        const piece = this.getPiece(this.selected);
+        if (!piece) return;
+
+        this.pendingMove = { piece, from: this.selected, to };
         this.send("MOVE", { from: this.selected, to });
     }
 
@@ -169,6 +207,51 @@ export class Game {
     }
 
     private showInfo(message: string) {
-        console.log(message);
+        alert(message);
     }
+
+		private startGame() {
+        this.gameOver = false;
+        this.historyEl.value = "";
+        this.showInfo("Игра началась");
+    }
+
+    private endGame() {
+        this.gameOver = true;
+        this.showInfo("Игра завершена");
+    }
+
+		private addToHistory(piece: Piece, from: string, to: string) {
+				 const gender = this.getPieceGender(piece.type);
+         const color =
+          piece.color === "WHITE"
+            ? (gender === "f" ? "Белая" : "Белый")
+            : (gender === "f" ? "Чёрная" : "Чёрный");
+
+            const type = this.getPieceName(piece.type).toLowerCase();
+            this.historyEl.value += `${color} ${type}: ${from} → ${to}\n`;
+            this.historyEl.scrollTop = this.historyEl.scrollHeight;
+    }
+
+		private getPieceName(type: string): string {
+        return {
+            Pawn: "Пешка",
+            Rook: "Ладья",
+            Knight: "Конь",
+            Bishop: "Слон",
+            Queen: "Ферзь",
+            King: "Король"
+        }[type] || type;
+    }
+
+		private getPieceGender(type: string): "m" | "f" {
+        return {
+            Pawn: "f",
+            Rook: "f",
+            Knight: "m",
+            Bishop: "m",
+            Queen: "m",
+            King: "m"
+    }[type] || type;
+  }
 }

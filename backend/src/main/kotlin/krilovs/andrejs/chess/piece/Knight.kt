@@ -16,7 +16,6 @@ class Knight(color: Color, square: Int) : Piece(color, square) {
       val dr = kotlin.math.abs(board.rank(square) - board.rank(to))
 
       if (df + dr != 3) continue
-
       addMove(board, moves, to)
     }
   }

@@ -8,10 +8,28 @@ body {
     background: #1e1e2f;
 }
 
-#app {
+#layout {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+#sidebar {
+    width: 260px;
+    background: #2c2c3e;
+    color: white;
+    padding: 20px;
     display: flex;
     flex-direction: column;
+    gap: 15px;
+}
+
+#app {
+    flex: 1;
+    display: flex;
+    justify-content: center;
     align-items: center;
+    padding: 20px;
 }
 
 .board {
@@ -72,4 +90,45 @@ body {
 .coord.left {
     top: 4px;
     left: 6px;
+}
+
+.btn {
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-start {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-end {
+    background: #e53935;
+    color: white;
+}
+
+.stats {
+    font-size: 14px;
+    opacity: 0.85;
+}
+
+.history {
+    margin-top: 10px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.history textarea {
+    flex-grow: 1;
+    resize: none;
+    border-radius: 8px;
+    border: none;
+    padding: 10px;
+    font-size: 12px;
+    background: #1e1e2f;
+    color: #ddd;
 }

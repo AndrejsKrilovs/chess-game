@@ -26,7 +26,6 @@ class Pawn(color: Color, square: Int) : Piece(color, square) {
     for (offset in attacks) {
       val to = square + offset
       if (!board.isInside(to)) continue
-
       if (kotlin.math.abs(board.file(square) - board.file(to)) != 1) continue
 
       val target = board.getPiece(to)
