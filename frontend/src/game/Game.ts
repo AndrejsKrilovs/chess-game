@@ -9,23 +9,23 @@ type Color = "WHITE" | "BLACK";
 export class Game {
   private state;
   private ui: GameUI;
+  private toast: Toast;
   private socket: GameSocket;
   private board: BoardController;
-  private toast: Toast;
 
   constructor(private bus: EventBus) {
-    this.state = new GameState();
+		this.state = new GameState();
     this.ui = new GameUI(bus);
+    this.toast = new Toast(bus);
     this.socket = new GameSocket(bus);
     this.board = new BoardController(bus);
-    this.toast = new Toast(bus);
     this.ui.init(this.openStartDialog, this.openEndDialog);
     bus.on("CELL_CLICK", this.onCellClick);
     bus.on("SOCKET_MESSAGE", this.handleMessage);
   }
 
   private openStartDialog = (): void => {
-    this.bus.emit("OPEN_COLOR_PICKER", this.startGame);
+    this.bus.emit("OPEN_COLOR_PICKER", (color: Color) => this.startGame(color));
   };
 
   private startGame = (color: Color): void => {
@@ -37,27 +37,31 @@ export class Game {
 
     this.board.create();
     this.socket.connect();
-    this.bus.on("SOCKET_OPEN", () => {
+    const startHandler = () => {
       this.socket.send("START_GAME", { color });
-    });
+      this.bus.off?.("SOCKET_OPEN", startHandler);
+    };
+
+    this.bus.on("SOCKET_OPEN", startHandler);
   };
 
   private openEndDialog = (): void => {
     this.bus.emit("CONFIRM", {
       message: "Завершить игру?",
-      onConfirm: this.endGame
+      onConfirm: () => this.finishGame("Игра завершена", { destroyBoard: true })
     });
   };
 
-  private endGame = (): void => {
-    this.finishGame("Игра завершена");
-  };
-
-  private finishGame = (msg: string): void => {
+  private finishGame = (msg: string, options?: { destroyBoard?: boolean }): void => {
     this.state.isStarted = false;
     this.state.gameOver = true;
     this.ui.setStarted(false);
     this.socket.close();
+
+    if (options?.destroyBoard) {
+      this.board.destroy();
+    }
+
     this.bus.emit("TOAST", { message: msg });
   };
 
@@ -97,7 +101,7 @@ export class Game {
         this.finishGame("МАТ!");
         break;
       case "STALEMATE":
-        this.finishGame("ПАТ!");
+        this.finishGame("Ничья, доступных ходов больше нет");
         break;
     }
   };
@@ -111,7 +115,7 @@ export class Game {
     if (!this.state.selected) return;
 
     if (!data.moves?.length) {
-      this.bus.emit("TOAST", { message: `Нет доступных ходов` });
+      this.bus.emit("TOAST", { message: "Нет доступных ходов" });
       this.state.resetSelection();
       this.board.clearHighlights();
       return;
@@ -141,8 +145,7 @@ export class Game {
 
     if (!this.state.selected) {
       const piece = this.getPiece(coord);
-      if (!piece) return;
-      if (piece.color !== this.state.currentTurn) return;
+      if (!piece || piece.color !== this.state.currentTurn) return;
 
       this.state.selected = coord;
       this.socket.send("GET_MOVES", { from: coord });

@@ -9,13 +9,10 @@ import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
 
 class Handler : TextWebSocketHandler() {
-
+  private val startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
   private val mapper = jacksonObjectMapper()
   private val sessions = mutableSetOf<WebSocketSession>()
-
-  private val board = Board().apply {
-    loadFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-  }
+  private val board = Board().apply { reset() }
 
   private val attackService = AttackService(board)
   private val rules = GameRules(board, attackService)
@@ -41,6 +38,7 @@ class Handler : TextWebSocketHandler() {
   override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
     val data = mapper.readTree(message.payload)
     when (data["type"]?.asText()) {
+      "START_GAME" -> session.handleStartGame(data)
       "GET_MOVES" -> session.handleGetMoves(data)
       "MOVE" -> session.handleMove(data)
     }
@@ -68,6 +66,12 @@ class Handler : TextWebSocketHandler() {
     broadcastEvent("MOVE", move.toDto())
     makeBotMoveIfNeeded()?.let { broadcastEvent("MOVE", it.toDto()) }
     broadcastState()
+  }
+
+  private fun WebSocketSession.handleStartGame(data: JsonNode) {
+    board.reset()
+    lastMove = null
+    sendEvent("STATE", buildStatePayload())
   }
 
   private fun makeBotMoveIfNeeded(): Move? {
@@ -124,6 +128,10 @@ class Handler : TextWebSocketHandler() {
       "rank" to (square / 8) + 1
     )
   )
+
+  private fun Board.reset() {
+    loadFromFEN(startFEN)
+  }
 
   private fun Int.toCoord() = "${'a' + (this % 8)}${(this / 8) + 1}"
   private fun String.toSquare(): Int = (this[1].digitToInt() - 1) * 8 + (this[0] - 'a')
