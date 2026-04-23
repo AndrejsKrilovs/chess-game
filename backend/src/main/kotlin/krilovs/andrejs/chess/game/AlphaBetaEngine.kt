@@ -59,7 +59,9 @@ class AlphaBetaEngine(
 
   private fun evaluate(): Int {
     val score = board.pieces.sumOf { piece ->
-      val value = pieceValue(piece) + positionBonus(piece)
+      val pieceValue = pieceValue(piece) + positionBonus(piece)
+      val castlingBonus = if (piece is King && piece.square in CASTLED_KING_SQUARES) 100 else 0
+      val value = pieceValue + castlingBonus
       if (piece.color == Color.WHITE) value else -value
     }
 
@@ -102,10 +104,11 @@ class AlphaBetaEngine(
   }
 
   private fun moveScore(move: Move): Int =
-    (move.captured?.let { pieceValue(it) * 10 } ?: 0) + promotionBonus(move)
+    (move.captured?.let { pieceValue(it) * 10 } ?: 0) + promotionBonus(move) + if (move.isCastling) 100 else 0
 
   companion object {
     private const val INF = Int.MAX_VALUE - 1
     private const val MATE = 100_000
+    private val CASTLED_KING_SQUARES = setOf(6, 2, 62, 58)
   }
 }
