@@ -17,17 +17,22 @@ class AlphaBetaEngine(
   fun findBestMove(depth: Int): Move? {
     var bestMove: Move? = null
     var bestScore = -INF
-    val moves = board.generateMoves().toMutableList().apply(::orderMoves)
+    var alpha = -INF
+
+    val moves = board.generateMoves()
+      .filter(rules::isMoveSafe)
+      .toMutableList()
+      .apply(::orderMoves)
 
     for (move in moves) {
-      if (!rules.isMoveSafe(move)) continue
       board.makeMove(move)
-
-      val score = -alphaBeta(depth - 1, -INF, INF)
+      val score = -alphaBeta(depth - 1, -INF, -alpha)
       board.unmakeMove(move)
+
       if (score > bestScore) {
         bestScore = score
         bestMove = move
+        alpha = score
       }
     }
 
@@ -36,6 +41,7 @@ class AlphaBetaEngine(
 
   private fun alphaBeta(depth: Int, alphaInit: Int, betaInit: Int): Int {
     var alpha = alphaInit
+    var beta = betaInit
     when (rules.getGameState(board.currentTurn)) {
       GameState.CHECKMATE -> return -MATE
       GameState.STALEMATE -> return 0
@@ -43,14 +49,17 @@ class AlphaBetaEngine(
     }
 
     if (depth == 0) return evaluate()
-    val moves = board.generateMoves().toMutableList().apply(::orderMoves)
+    val moves = board.generateMoves()
+      .filter(rules::isMoveSafe)
+      .toMutableList()
+      .apply(::orderMoves)
+
     for (move in moves) {
-      if (!rules.isMoveSafe(move)) continue
       board.makeMove(move)
-      val score = -alphaBeta(depth - 1, -betaInit, -alpha)
+      val score = -alphaBeta(depth - 1, -beta, -alpha)
       board.unmakeMove(move)
 
-      if (score >= betaInit) return betaInit
+      if (score >= beta) return beta
       if (score > alpha) alpha = score
     }
 

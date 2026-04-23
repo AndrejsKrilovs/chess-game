@@ -9,6 +9,8 @@
 
   --light-cell: #f0d9b5;
   --dark-cell: #b58863;
+
+  --cell-size: 80px;
 }
 
 body {
@@ -46,7 +48,7 @@ body {
 
 .board {
   display: grid;
-  grid-template: repeat(8, 80px) / repeat(8, 80px);
+  grid-template: repeat(8, var(--cell-size)) / repeat(8, var(--cell-size));
 
   border-radius: 12px;
   overflow: hidden;

@@ -4,6 +4,8 @@
     "module": "ESNext",
     "strict": true,
     "moduleResolution": "bundler",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true
   }
 }
