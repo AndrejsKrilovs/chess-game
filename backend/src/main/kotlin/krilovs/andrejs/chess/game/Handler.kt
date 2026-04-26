@@ -31,12 +31,15 @@ class Handler : TextWebSocketHandler() {
 
   override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
     val data = mapper.readTree(message.payload)
-    when (data["type"]?.asText()) {
-      "START_GAME" -> session.handleStartGame(data)
-      "GET_MOVES" -> session.handleGetMoves(data)
-      "PROMOTE" -> session.handlePromote(data)
+    val type = data["type"]?.asText()
+    val payload = data["payload"]
+
+    when (type) {
+      "START_GAME" -> session.handleStartGame(payload)
+      "GET_MOVES" -> session.handleGetMoves(payload)
+      "PROMOTE" -> session.handlePromote(payload)
       "END_GAME" -> session.handleEndGame()
-      "MOVE" -> session.handleMove(data)
+      "MOVE" -> session.handleMove(payload)
     }
   }
 
@@ -88,6 +91,7 @@ class Handler : TextWebSocketHandler() {
   private fun WebSocketSession.handleEndGame() {
     board.reset()
     lastMove = null
+    sendEvent("GAME_ENDED", mapOf("message" to "Партия завершена досрочна"))
   }
 
   private fun WebSocketSession.handlePromote(data: JsonNode) {
@@ -124,13 +128,13 @@ class Handler : TextWebSocketHandler() {
     ))
   }
 
-  private fun WebSocketSession.sendEvent(type: String, payload: Map<String, Any?>) {
-    val json = mapper.writeValueAsString(payload + ("type" to type))
+  private fun WebSocketSession.sendEvent(type: String, payload: Any?) {
+    val json = mapper.writeValueAsString(mapOf("type" to type, "payload" to payload))
     sendMessage(TextMessage(json))
   }
 
-  private fun broadcastEvent(type: String, payload: Map<String, Any?>) {
-    val json = mapper.writeValueAsString(payload + ("type" to type))
+  private fun broadcastEvent(type: String, payload: Any?) {
+    val json = mapper.writeValueAsString(mapOf("type" to type, "payload" to payload))
     sessions.forEach { it.sendMessage(TextMessage(json)) }
   }
 

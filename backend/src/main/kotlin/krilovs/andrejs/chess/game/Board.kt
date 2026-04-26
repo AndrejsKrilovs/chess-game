@@ -101,13 +101,9 @@ class Board {
     val piece = move.piece
     this[move.from] = null
 
-    val newPiece = when (move.promotion) {
-      'q' -> Queen(piece.color, move.to)
-      'r' -> Rook(piece.color, move.to)
-      'b' -> Bishop(piece.color, move.to)
-      'n' -> Knight(piece.color, move.to)
-      else -> piece
-    }
+    val newPiece = move.promotion
+      ?.let { createPiece(it, piece.color, move.to) }
+      ?: piece
 
     this[move.to] = newPiece
     newPiece.square = move.to

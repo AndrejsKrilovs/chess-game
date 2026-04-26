@@ -1,8 +1,12 @@
 import "./style.css"
 import { eventBus } from "./EventBus"
+import { gameSocket } from "./game/GameSocket"
+import { gameController } from "./game/GameController"
 
 import { sidebarComponent } from "./sidebar/SidebarComponent"
 import { sidebarController } from "./sidebar/SidebarController"
+
+import { toastController } from "./toast/ToastController"
 
 const setup = (
   selector: string,
@@ -11,10 +15,13 @@ const setup = (
 ) => {
   const el = document.querySelector<HTMLElement>(selector)
   if (!el) throw new Error(`${selector} not found`)
-
   component.init?.(el)
   controller.control(eventBus, el)
-  return el
 }
 
 setup("#sidebar", sidebarComponent, sidebarController)
+setup(".toast", { init: () => {} }, toastController)
+
+gameSocket(eventBus)
+gameController.control(eventBus)
+eventBus.emit("WS_CONNECT", "ws://localhost:8080/ws")

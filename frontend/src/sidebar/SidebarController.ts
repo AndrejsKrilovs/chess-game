@@ -7,23 +7,21 @@ class SidebarController {
       const target = e.target as HTMLElement
 
       if (target.matches("[data-start]")) {
-        eventBus.emit("START_GAME")
+        eventBus.emit("OPEN_COLOR_PICKER")
       }
       if (target.matches("[data-end]")) {
-        eventBus.emit("END_GAME")
+        eventBus.emit("SHOW_END_CONFIRM")
       }
     })
 
-    eventBus.on("START_GAME", () => {
+    eventBus.on("OPEN_COLOR_PICKER", () => {
       startBtn.classList.add("hidden")
       endBtn.classList.remove("hidden")
+      eventBus.emit("SHOW_COLOR_PICKER")
     })
-    eventBus.on("END_GAME", () => {
+    eventBus.on("WS:GAME_ENDED", (payload) => {
       startBtn.classList.remove("hidden")
       endBtn.classList.add("hidden")
-    })
-    eventBus.on("OPEN_COLOR_PICKER", () => {
-      console.log("open color picker (пока просто лог)")
     })
   }
 }
