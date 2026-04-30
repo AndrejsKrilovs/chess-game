@@ -1,7 +1,3 @@
 package krilovs.andrejs.chess.piece
 
-class Rook(color: Color, square: Int) : Piece(color, square){
-  override fun generateAvailableMoves(): Set<Int> {
-    return emptySet()
-  }
-}
+class Rook(color: Color, square: Int) : SlidingPiece(color, square, intArrayOf(8, -8, 1, -1))

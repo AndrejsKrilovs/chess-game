@@ -1,7 +1,9 @@
 package krilovs.andrejs.chess.piece
 
+import krilovs.andrejs.chess.game.Board
+
 class King(color: Color, square: Int) : Piece(color, square) {
-  override fun generateAvailableMoves(): Set<Int> {
+  override fun generateAvailableMoves(board: Board): Set<Int> {
     return emptySet()
   }
 }

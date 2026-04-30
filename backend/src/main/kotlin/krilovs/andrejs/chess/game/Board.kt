@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component
 @Component
 class Board {
   private val board = Array<Piece?>(64) { null }
-  private var availableMoves = emptySet<Move>()
   operator fun get(square: Int) = board[square]
   operator fun set(square: Int, piece: Piece?) { board[square] = piece }
 
@@ -56,7 +55,10 @@ class Board {
       return AvailableMovesResult.Error("Фигура другого цвета")
     }
 
-    availableMoves = piece.generateMoves().filter { it.piece.color != this[it.to.toSquare()]?.color }.toSet()
+    val availableMoves = piece.generateAvailableMoves(this)
+      .map { Move(square.toCord(), it.toCord(), piece) }
+      .toSet()
+
     return when {
       availableMoves.isEmpty() -> AvailableMovesResult.Error("Нет доступных ходов")
       else -> AvailableMovesResult.Success(availableMoves)
@@ -64,16 +66,21 @@ class Board {
   }
 
   fun makeMove(from: Int, to: Int): MoveResult {
-    val move = availableMoves.firstOrNull { it.to.toSquare() == to } ?: return MoveResult.Error("Некорректный ход")
+    val piece = this[from]
 
-    this[from] = null
-    val piece = move.piece
-    piece.square = to
+    val move = piece?.generateAvailableMoves(this)
+      ?.firstOrNull { it == to }
+      ?.let {
+        Move(from.toCord(), to.toCord(), piece).also {
+          this[from] = null
+          this[to] = piece.apply { square = to }
+          currentColor = currentColor.opposite()
+        }
+      }
 
-    this[to] = piece
-    availableMoves = emptySet()
-    currentColor = currentColor.opposite()
-    return MoveResult.Success(move)
+    return move
+      ?.let { MoveResult.Success(it) }
+      ?: MoveResult.Error("Некорректный ход")
   }
 
   private fun createPiece(type: Char?, color: Color, square: Int): Piece =
@@ -87,5 +94,5 @@ class Board {
       else -> error("Unknown piece: $type")
     }
 
-  private fun String.toSquare(): Int = (this[1].digitToInt() - 1) * 8 + (this[0] - 'a')
+  private fun Int.toCord() = "${'a' + (this % 8)}${(this / 8) + 1}"
 }
