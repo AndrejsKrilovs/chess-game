@@ -37,6 +37,7 @@ class GameController {
 				case "CHECK":
 					eventBus.emit("TOAST", { message: "ШАХ!" })
 					break
+				case "DRAW":
 				case "STALEMATE":
 					eventBus.emit("TOAST", { message: "Партия завершилась в ничью!" })
 					eventBus.emit("ADD_HISTORY", { text: "Партия завершилась в ничью!" })

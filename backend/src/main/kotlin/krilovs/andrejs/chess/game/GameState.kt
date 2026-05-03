@@ -4,5 +4,6 @@ enum class GameState {
   CHECK,
   CHECKMATE,
   STALEMATE,
-  NORMAL
+  NORMAL,
+  DRAW
 }

@@ -1,7 +1,9 @@
 package krilovs.andrejs.chess.game
 
+import krilovs.andrejs.chess.piece.Bishop
 import krilovs.andrejs.chess.piece.Color
 import krilovs.andrejs.chess.piece.King
+import krilovs.andrejs.chess.piece.Knight
 import krilovs.andrejs.chess.piece.Pawn
 import krilovs.andrejs.chess.piece.Piece
 import krilovs.andrejs.chess.piece.Rook
@@ -55,8 +57,9 @@ class RuleService {
     val inCheck = isSquareUnderAttack(board, kingSquare, currentTurn.opposite())
 
     return when {
-      inCheck && !hasMoves -> GameState.CHECKMATE
+      isInsufficientMaterial(board) -> GameState.DRAW
       !inCheck && !hasMoves -> GameState.STALEMATE
+      inCheck && !hasMoves -> GameState.CHECKMATE
       inCheck -> GameState.CHECK
       else -> GameState.NORMAL
     }
@@ -86,6 +89,27 @@ class RuleService {
 
   fun isCastling(piece: Piece, from: Int, to: Int): Boolean =
     piece is King && kotlin.math.abs(to - from) == 2
+
+  private fun isInsufficientMaterial(board: BoardService): Boolean {
+    val pieces = board.pieces
+    val nonKings = pieces.filterNot { it is King }
+
+    // только короли
+    if (nonKings.isEmpty()) return true
+
+    // король + лёгкая фигура vs король
+    if (nonKings.size == 1) {
+      return nonKings[0] is Bishop || nonKings[0] is Knight
+    }
+
+    // K+B vs K+B (оба слона на одном цвете)
+    if (nonKings.all { it is Bishop }) {
+      val colors = nonKings.map { BoardUtils.squareColor(it.square) }
+      return colors.toSet().size == 1
+    }
+
+    return false
+  }
 
   private fun findKing(board: BoardService): Int =
     board.pieces.first { it is King && it.color == board.currentColor }.square
