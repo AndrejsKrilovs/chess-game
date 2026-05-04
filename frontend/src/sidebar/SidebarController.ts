@@ -32,6 +32,7 @@ class SidebarController {
       startBtn.classList.remove("hidden")
       endBtn.classList.add("hidden")
       eventBus.emit("TOAST", payload)
+      eventBus.emit("ADD_HISTORY", { text: payload.message })
     })
 		eventBus.on("ADD_HISTORY", (payload) => {
 			if (payload.text) {
@@ -41,8 +42,8 @@ class SidebarController {
 			}
 
 			const pieceColor = payload.color === "WHITE" ? "Белые" : "Чёрные"
-			if (payload.isCastling) {
-        return append(`${pieceColor}: ${ p.castlingType === "SHORT" ? "короткая рокировка" : "длинная рокировка" }`)
+			if (payload.castlingType) {
+        return append(`${pieceColor}: ${ payload.castlingType === "SHORT" ? "короткая рокировка" : "длинная рокировка" }`)
       }
 
 			const pieceName = pieceMetadata[payload.piece]?.name ?? type
