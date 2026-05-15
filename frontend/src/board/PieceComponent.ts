@@ -1,7 +1,7 @@
-import type { PieceType, PieceName } from "./BoardTypes"
+import type { PieceType } from "./BoardTypes"
 
 class PieceComponent {
-  init = (root: HTMLElement, pieces?: PieceType[]) => {
+  init = (root: HTMLElement, pieces: PieceType[]) => {
     root.querySelectorAll(".cell").forEach(cell => {
       const coord = cell.querySelector(".coord")
       cell.innerHTML = ""
@@ -12,7 +12,7 @@ class PieceComponent {
       const coord = `${p.coordinates}`
       const cell = root.querySelector(`[data-pos="${coord}"]`)
       if (!cell) return
-      cell.innerHTML = `<span data-piece="${p.color}_${p.type}">${pieceMetadata[p.type]?.[p.color] ?? "?"}</span>`
+      cell.innerHTML = `<span data-piece="${p.color}_${p.type}">${pieceMetadata[p.type][p.color]}</span>`
     })
   }
 }

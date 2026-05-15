@@ -10,7 +10,7 @@
   --light-cell: #f0d9b5;
   --dark-cell: #b58863;
 
-  --cell-size: 80px;
+  --cell-size: 85px;
 }
 
 body {
@@ -227,6 +227,12 @@ body {
 
 .cell.highlight {
   background: rgba(255, 215, 0, 0.35);
+}
+
+.cell span[data-piece] {
+  font-size: calc(var(--cell-size) * 0.65);
+  line-height: 1;
+  user-select: none;
 }
 
 .coord {

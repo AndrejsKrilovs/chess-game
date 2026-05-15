@@ -35,6 +35,7 @@ class GameController {
       }
 
 			const board = document.querySelector(".board")
+			if (!board) return
 			switch (state) {
 				case "CHECK":
 					eventBus.emit("TOAST", { message: "ШАХ!" })
